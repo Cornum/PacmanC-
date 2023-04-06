@@ -12,28 +12,29 @@ namespace PacmanC_
     {
         static void Main(string[] args)
         {
+            bool isOpen = true;
             Console.CursorVisible = false;
-
+            int maxScore = 149;
             char[,] map = ReadMap("map.txt");
             ConsoleKeyInfo pressedKey = new ConsoleKeyInfo('w', ConsoleKey.W, false, false, false);
 
             int pacmanX = 1, pacmanY = 1;
-            int score = 0;
+            int score = 0, enemyScore = 0;
+            int[] enemyPosition = { 25, 4 };
 
-            Task.Run(() =>
+            while (isOpen)
             {
-                while (true)
+                if (maxScore <= 0)
                 {
-                    pressedKey = Console.ReadKey();
+                    Console.Clear();
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.BackgroundColor = ConsoleColor.White;
+                    if (score > enemyScore) Console.WriteLine("Winner is you");
+                    else if (score < enemyScore) Console.WriteLine("Winner is bot");
+                    else Console.WriteLine("Tie.");
+                    break;
                 }
-            });
-
-            while (true)
-            {
-
                 Console.Clear();
-                HandleInput(pressedKey, ref pacmanX, ref pacmanY, map, ref score);
-
                 Console.ForegroundColor = ConsoleColor.Blue;
                 DrawMap(map);
 
@@ -41,13 +42,20 @@ namespace PacmanC_
                 Console.SetCursorPosition(pacmanX, pacmanY);
                 Console.Write('@');
 
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.SetCursorPosition(enemyPosition[0], enemyPosition[1]);
+                Console.Write('@');
+
+
 
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.SetCursorPosition(32, 0);
                 Console.Write($"Score: {score}");
-
-                Thread.Sleep(500);
-
+                Console.SetCursorPosition(32, 1);
+                Console.Write($"Enemy score: {enemyScore}");
+                pressedKey = Console.ReadKey();
+                EnemyWalk(ref enemyPosition, map, ref maxScore, ref enemyScore);
+                HandleInput(pressedKey, ref pacmanX, ref pacmanY, map, ref score, ref maxScore);
             }
 
         }
@@ -94,11 +102,13 @@ namespace PacmanC_
             }
 
         }
-        private static void HandleInput(ConsoleKeyInfo pressedKey, ref int pacmanX, ref int pacmanY, char[,] map, ref int score)
+        private static void HandleInput(ConsoleKeyInfo pressedKey, ref int pacmanX,
+            ref int pacmanY, char[,] map, ref int score, ref int maxScore)
         {
             int[] direction = GetDirection(pressedKey);
             int nextPacmanPositionX = pacmanX + direction[0];
             int nextPacmanPositionY = pacmanY + direction[1];
+
 
             char nextCell = map[nextPacmanPositionX, nextPacmanPositionY];
 
@@ -110,6 +120,7 @@ namespace PacmanC_
                 if (map[nextPacmanPositionX, nextPacmanPositionY] == '.')
                 {
                     score++;
+                    maxScore--;
                     map[nextPacmanPositionX, nextPacmanPositionY] = ' ';
                 }
             }
@@ -135,6 +146,56 @@ namespace PacmanC_
             }
 
             return direction;
+        }
+        private static int[] EnemyGetDirection()
+        {
+            Random rand = new Random();
+            int[] direction = { 0, 0 };
+            direction[0] = rand.Next(-1, 2);
+            if (rand.Next(0, 2) == 0)
+            {
+                if (rand.Next(-1, 2) == -1)
+                {
+                    direction[0] = -1;
+                }
+                else if (rand.Next(-1, 2) == 1)
+                {
+                    direction[0] = 1;
+                }
+            }
+            else if (rand.Next(0, 2) == 1)
+            {
+                if (rand.Next(-1, 2) == -1)
+                {
+                    direction[1] = -1;
+                }
+                else if (rand.Next(-1, 2) == 1)
+                {
+                    direction[1] = 1;
+                }
+            }
+
+            return direction;
+        }
+
+        private static void EnemyWalk(ref int[] enemyPosition, char[,] map, ref int maxScore, ref int enemyScore)
+        {
+            int[] enemyDirection = EnemyGetDirection();
+            int nextEnemyPositionX = enemyPosition[0] + enemyDirection[0];
+            int nextEnemyPositionY = enemyPosition[1] + enemyDirection[1];
+
+            if (map[nextEnemyPositionX, nextEnemyPositionY] != '#')
+            {
+                enemyPosition[0] = nextEnemyPositionX;
+                enemyPosition[1] = nextEnemyPositionY;
+
+                if (map[nextEnemyPositionX, nextEnemyPositionY] == '.')
+                {
+                    enemyScore++;
+                    maxScore--;
+                    map[nextEnemyPositionX, nextEnemyPositionY] = ' ';
+                }
+            }
         }
     }
 }
